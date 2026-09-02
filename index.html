@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dYdX $1M Buyback — Execution Options | KPK</title>
+<meta name="description" content="Order-book impact and participation-rate analysis for a $1M DYDX buyback. Prepared by KPK Treasury SubDAO for the dYdX Foundation.">
+<link rel="icon" href="assets/kpk.png">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<div class="wrap">
+
+  <div class="mast">
+    <div>
+      <h1>$1M DYDX buyback <span class="lt">— execution options</span></h1>
+      <div class="sub">For the dYdX Foundation · prepared by KPK Treasury SubDAO</div>
+    </div>
+    <div class="right">
+      <div class="marks">
+        <img class="d" src="assets/dydx.svg" alt="dYdX"><span class="wm">dYdX</span>
+        <span class="bar"></span>
+        <img class="k" src="assets/kpk.png" alt="KPK"><span class="wm">KPK</span>
+      </div>
+      <div class="stamp" id="stamp">Loading snapshot…</div>
+      <a class="btn" id="refreshBtn" target="_blank" rel="noopener"
+         href="https://github.com/JKtranslator/dydx-buyback-live/actions/workflows/refresh.yml">
+        ↻ Refresh data
+      </a>
+    </div>
+  </div>
+
+  <div id="app" hidden>
+
+    <section>
+      <div class="eyebrow">Market context</div>
+      <h2>Order book and traded volume</h2>
+      <div class="cards" id="stats"></div>
+
+      <div class="method" style="margin-top:11px;">
+        <b>Participation rate.</b> The defence tranche is worked as a percentage of market volume
+        rather than as a single market order. Tread's pre-trade engine flags orders above
+        <b>~2.5%</b> participation as high-impact; this is an execution-quality advisory. The tiers
+        below are execution-desk convention for managing market impact, not regulatory limits. At the
+        current 24h volume of ~<span id="methodVol">—</span>, deployment time scales inversely with
+        the rate.
+        <div class="chips">
+          <span class="pill p-good">≤2.5%</span><span class="pill p-good">5%</span>
+          <span class="pill p-warn">10%</span><span class="pill p-bad">15%</span>
+          <span class="pill p-bad">20%</span>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="eyebrow">Execution options</div>
+      <h2>Market buy paired with a worked defence tranche</h2>
+      <div id="options"></div>
+    </section>
+
+    <section>
+      <div class="eyebrow">Impact curve</div>
+      <h2>Average fill cost by market-buy size</h2>
+      <div class="chartbox">
+        <div id="chart"></div>
+        <p class="fine" style="margin:0 0 6px;">Average fill price against mid, walking the current
+          displayed book. Dashed markers are the four market-buy sizes above.</p>
+      </div>
+    </section>
+
+    <section>
+      <div class="eyebrow">Simulator</div>
+      <h2>Test your own sizes against this snapshot</h2>
+      <div class="sim">
+        <div class="sim-grid">
+          <div class="field">
+            <label>Market buy <span class="val" id="simBuyVal">$150k</span></label>
+            <input type="range" id="simBuyRange" min="0" max="1000000" step="10000" value="150000">
+            <input type="number" id="simBuyNum" min="0" step="10000" value="150000" style="margin-top:8px;">
+          </div>
+          <div class="field">
+            <label>Worked defence <span class="val" id="simDefVal">$850k</span></label>
+            <input type="range" id="simDefRange" min="0" max="1000000" step="10000" value="850000">
+            <input type="number" id="simDefNum" min="0" step="10000" value="850000" style="margin-top:8px;">
+          </div>
+          <div class="field">
+            <label>Participation rate</label>
+            <div class="seg" id="simRates"></div>
+            <button class="btn ghost" id="simSplit" style="margin-top:10px;">Balance to $1M</button>
+          </div>
+        </div>
+        <div class="out" id="simOut"></div>
+        <div class="flag" id="simFlag"></div>
+      </div>
+      <p class="fine">Runs entirely in your browser against the stored snapshot — nothing is sent
+        anywhere. Press <b>Refresh data</b> above to pull a newer book, then reload.</p>
+    </section>
+
+    <section>
+      <div class="eyebrow">Reference</div>
+      <h2>Single $1M market order</h2>
+      <div id="reference"></div>
+    </section>
+
+    <footer>
+      <div class="left">
+        <img src="assets/kpk.png" alt="KPK"><span class="wm">KPK</span>
+        <span class="src">Binance DYDX-USDT · public order book</span>
+      </div>
+      <span class="src" id="footStamp"></span>
+    </footer>
+
+    <p class="fine">
+      <b>Ending price</b> is the last price level a market order reaches by walking the current
+      displayed Binance book; it is an instantaneous measure that reverts as market-makers replenish.
+      <b>Deploys in</b> assumes the tranche is worked at the stated percentage of market volume, held
+      at the current 24h figure. <b>Avg cost vs mid</b> is the average fill price, against mid, of
+      buying one day's notional at that participation rate in a single pass of the book. Average fill
+      is used rather than the final price level, which can saturate where one large resting order
+      absorbs a wide range of sizes at a single price. All figures hold the book constant and are
+      therefore upper bounds, since a worked order allows replenishment between fills. Participation
+      tiers are execution-desk convention for managing market impact; they are not exchange or
+      regulatory limits. Internal decision aid, not investment or legal advice.
+    </p>
+
+  </div>
+</div>
+<script src="assets/app.js"></script>
+</body>
+</html>
