@@ -232,7 +232,98 @@ function initSimulator() {
   });
   el('simSplit').addEventListener('click', () => { state.defend = Math.max(0, BUDGET - state.buy); render(); });
 
+  window.__simRender = render;
   render();
+}
+
+
+/* ---------------------------------------------------------------- live refresh
+   Binance's public market-data endpoints send Access-Control-Allow-Origin: *, so the browser can
+   pull the current book itself. The committed snapshot stays the shared baseline; this gives the
+   viewer a live read on demand without needing repo access. */
+
+const HOSTS = [
+  'https://data-api.binance.vision',   // public mirror, not geo-restricted
+  'https://api.binance.com',
+  'https://api-gcp.binance.com',
+];
+const CURVE_TARGET_USD = 3_000_000;
+
+async function fetchJson(path) {
+  let last;
+  for (const host of HOSTS) {
+    try {
+      const r = await fetch(host + path, { cache: 'no-store' });
+      if (r.ok) return await r.json();
+      last = `${host} -> HTTP ${r.status}`;
+    } catch (e) { last = `${host} -> ${e.message}`; }
+  }
+  throw new Error(last || 'no host reachable');
+}
+
+async function fetchLive() {
+  const [depth, tkr] = await Promise.all([
+    fetchJson(`/api/v3/depth?symbol=${SNAP.symbol}&limit=5000`),
+    fetchJson(`/api/v3/ticker/24hr?symbol=${SNAP.symbol}`),
+  ]);
+  const bestAsk = +depth.asks[0][0], bestBid = +depth.bids[0][0];
+  const curve = [];
+  let cq = 0, cb = 0;
+  for (const [p, q] of depth.asks) {
+    cq += +p * +q; cb += +q;
+    curve.push([+p, cq, cb]);
+    if (cq >= CURVE_TARGET_USD) break;
+  }
+  const now = new Date();
+  return {
+    ...SNAP,
+    ts: now.toISOString(),
+    date: `${now.getUTCDate()} ${now.toLocaleString('en-GB', { month: 'short', timeZone: 'UTC' })} ${now.getUTCFullYear()}`,
+    time_utc: `${String(now.getUTCHours()).padStart(2, '0')}:${String(now.getUTCMinutes()).padStart(2, '0')} UTC`,
+    last: +tkr.lastPrice,
+    chg: +tkr.priceChangePercent,
+    vol24: +tkr.quoteVolume,
+    mid: (bestAsk + bestBid) / 2,
+    best_ask: bestAsk,
+    best_bid: bestBid,
+    spread_bps: (bestAsk / bestBid - 1) * 1e4,
+    depth_total: cq,
+    levels: curve.length,
+    curve,
+    live: true,
+  };
+}
+
+function setStamp() {
+  document.getElementById('stamp').innerHTML = SNAP.live
+    ? `<b>Live</b> · pulled ${SNAP.date}, ${SNAP.time_utc}<br>${SNAP.venue} ${SNAP.pair_label} · your browser`
+    : `Snapshot <b>${SNAP.date}, ${SNAP.time_utc}</b><br>${SNAP.venue} ${SNAP.pair_label} · stored`;
+}
+
+function renderAll() {
+  setStamp();
+  document.getElementById('methodVol').textContent = usd(SNAP.vol24);
+  renderStats(); renderOptions(); renderReference(); renderChart();
+  if (window.__simRender) window.__simRender();
+}
+
+function initRefresh() {
+  const btn = document.getElementById('refreshBtn');
+  const msg = document.getElementById('refreshMsg');
+  btn.addEventListener('click', async () => {
+    const label = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Fetching…'; msg.textContent = '';
+    try {
+      SNAP = await fetchLive();
+      renderAll();
+      msg.textContent = '';
+    } catch (e) {
+      msg.innerHTML = `Live fetch failed (${e.message}). Showing the stored snapshot &mdash; ` +
+        `Binance may be blocked on your connection.`;
+    } finally {
+      btn.disabled = false; btn.textContent = label;
+    }
+  });
 }
 
 /* ---------------------------------------------------------------- boot */
@@ -247,10 +338,9 @@ async function load() {
        Run the Refresh data workflow to generate <code>data/snapshot.json</code>.</div>`;
     return;
   }
-  document.getElementById('stamp').innerHTML =
-    `Snapshot <b>${SNAP.date}, ${SNAP.time_utc}</b><br>${SNAP.venue} ${SNAP.pair_label} · live book`;
-  document.getElementById('methodVol').textContent = usd(SNAP.vol24);
-  renderStats(); renderOptions(); renderReference(); renderChart(); initSimulator();
+  initSimulator();
+  renderAll();
+  initRefresh();
   document.getElementById('app').hidden = false;
 }
 load();

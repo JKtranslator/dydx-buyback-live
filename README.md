@@ -24,9 +24,18 @@ scripts/refresh.py      pulls Binance depth + 24h ticker, writes the snapshot
 .github/workflows/      refresh.yml — runs the script hourly and on demand
 ```
 
-The **Refresh data** button links to the Actions workflow. Run it and it pulls a fresh order book,
-commits `data/snapshot.json`, and Pages redeploys within a minute. The dashboard and the simulator
-then both read that snapshot, so everyone sees the same numbers.
+Two ways to get current data:
+
+- **Refresh live** (the button) pulls the order book straight from Binance into your browser and
+  re-renders everything immediately. Binance's public market-data endpoints send
+  `Access-Control-Allow-Origin: *`, so this needs no backend and no repo access. Nothing is stored —
+  it is a live read for whoever clicks it.
+- **update stored baseline** (the small link) runs the Actions workflow, which commits a fresh
+  `data/snapshot.json`. That is the shared figure everyone loads by default, and it also refreshes
+  hourly on a schedule.
+
+If a live fetch fails — Binance restricts some regions with HTTP 451 — the page says so and keeps
+showing the stored snapshot.
 
 Refresh locally instead:
 

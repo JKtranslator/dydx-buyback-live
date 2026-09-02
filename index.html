@@ -23,9 +23,11 @@
         <img class="k" src="assets/kpk.png" alt="KPK"><span class="wm">KPK</span>
       </div>
       <div class="stamp" id="stamp">Loading snapshot…</div>
-      <a class="btn" id="refreshBtn" target="_blank" rel="noopener"
+      <button class="btn" id="refreshBtn" type="button">↻ Refresh live</button>
+      <div class="stamp" id="refreshMsg"></div>
+      <a class="baseline" target="_blank" rel="noopener"
          href="https://github.com/JKtranslator/dydx-buyback-live/actions/workflows/refresh.yml">
-        ↻ Refresh data
+        update stored baseline ↗
       </a>
     </div>
   </div>
@@ -93,7 +95,8 @@
         <div class="flag" id="simFlag"></div>
       </div>
       <p class="fine">Runs entirely in your browser against the stored snapshot — nothing is sent
-        anywhere. Press <b>Refresh data</b> above to pull a newer book, then reload.</p>
+        anywhere. <b>Refresh live</b> pulls the current order book straight from Binance into your
+        browser; the stored snapshot is the shared baseline everyone loads by default.</p>
     </section>
 
     <section>
