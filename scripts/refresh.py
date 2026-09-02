@@ -11,7 +11,14 @@ import urllib.request
 from datetime import datetime, timezone
 
 SYMBOL = "DYDXUSDT"
-BASE = "https://api.binance.com"
+# api.binance.com geo-blocks some regions with HTTP 451 - notably US-hosted CI runners, which is
+# where the refresh workflow runs. data-api.binance.vision is Binance's public market-data mirror and
+# serves the identical endpoints without that restriction, so it is tried first.
+HOSTS = (
+    "https://data-api.binance.vision",
+    "https://api.binance.com",
+    "https://api-gcp.binance.com",
+)
 CURVE_TARGET_USD = 3_000_000   # keep levels until the curve can absorb this much buying
 MAX_LEVELS = 4000              # hard cap so snapshot.json stays shippable to the browser
 OUT = os.path.join(os.path.dirname(__file__), "..", "data", "snapshot.json")
@@ -23,10 +30,18 @@ TREAD_CALIBRATION = 1.02
 
 
 def get(path, params):
+    """Fetch from the first Binance host that answers; raises if all fail."""
     qs = "&".join(f"{k}={v}" for k, v in params.items())
-    req = urllib.request.Request(f"{BASE}{path}?{qs}", headers={"User-Agent": "kpk-dydx-buyback/1.0"})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        return json.loads(r.read().decode())
+    errors = []
+    for host in HOSTS:
+        req = urllib.request.Request(f"{host}{path}?{qs}",
+                                     headers={"User-Agent": "kpk-dydx-buyback/1.0"})
+        try:
+            with urllib.request.urlopen(req, timeout=30) as r:
+                return json.loads(r.read().decode())
+        except Exception as e:  # HTTP 451 (geo-block), timeouts, transient 5xx
+            errors.append(f"{host}: {e}")
+    raise RuntimeError("all Binance hosts failed: " + " | ".join(errors))
 
 
 def main():
