@@ -57,6 +57,13 @@
     <section>
       <div class="eyebrow">Execution options</div>
       <h2>Market buy paired with a worked defence tranche</h2>
+      <p class="lead">Each table reads left to right: pick a <b>rate</b> (coloured by the tiers above),
+        and it shows how long the tranche takes to deploy, how much that means buying per day, and the
+        price premium that daily buying would incur. <b>Avg fill vs mid</b> is the premium over today's
+        mid price you would pay on average if a whole day's buying were pushed through the book in one
+        pass — so at 10% participation you buy roughly a day's worth and fill about 1% above mid. A
+        tranche genuinely worked across the day pays less than this, because the book refills between
+        fills.</p>
       <div id="options"></div>
     </section>
 
@@ -117,13 +124,18 @@
       <b>Ending price</b> is the last price level a market order reaches by walking the current
       displayed Binance book; it is an instantaneous measure that reverts as market-makers replenish.
       <b>Deploys in</b> assumes the tranche is worked at the stated percentage of market volume, held
-      at the current 24h figure. <b>Avg cost vs mid</b> is the average fill price, against mid, of
-      buying one day's notional at that participation rate in a single pass of the book. Average fill
-      is used rather than the final price level, which can saturate where one large resting order
-      absorbs a wide range of sizes at a single price. All figures hold the book constant and are
+      at the current 24h figure. <b>Avg fill vs mid</b> is the premium over the current mid price paid
+      on average when one day's notional at that participation rate (rate &times; 24h volume) is swept
+      through the book in a single pass. It is the weighted price across every level the order touches,
+      not the last level reached: a single large resting order can absorb a wide range of sizes at one
+      price, so the final level saturates and stops distinguishing between rates, while the average
+      keeps rising with size. All figures hold the book constant and are
       therefore upper bounds, since a worked order allows replenishment between fills. Participation
       tiers are execution-desk convention for managing market impact; they are not exchange or
-      regulatory limits. Internal decision aid, not investment or legal advice.
+      regulatory limits. Depth figures count resting sell orders within the stated distance of the
+      best ask; totals that include liquidity far above mid are not realistically accessible and are
+      not shown. The stored curve spans <span id="curveNote">—</span>, which bounds the simulator's
+      range. Internal decision aid, not investment or legal advice.
     </p>
 
   </div>

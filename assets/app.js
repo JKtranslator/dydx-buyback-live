@@ -65,7 +65,9 @@ function avgCostVsMid(rate) {
   const { avg } = walk((SNAP.vol24 * rate) / 100);
   return (avg / SNAP.mid - 1) * 100;
 }
-const costTier = (c) => (c < 1 ? 'good' : c < 3 ? 'warn' : 'bad');
+/** Participation-rate tier, matching the reference chips in the method note.
+ *  The rate is the decision variable, so the colour belongs here rather than on the cost figure. */
+const rateTier = (r) => (r <= 5 ? 'good' : r <= 10 ? 'warn' : 'bad');
 
 /* ---------------------------------------------------------------- rendering */
 
@@ -76,7 +78,7 @@ function renderStats() {
     ['Volume, last 24h', usd(s.vol24), 'quote volume'],
     ['Spread', `${s.spread_bps.toFixed(0)}<span class="u">bps</span>`, ''],
     ['Depth +1% / +2%', `${usd(depthWithin(0.01))} / ${usd(depthWithin(0.02))}`, 'resting asks', 'sm'],
-    ['Curve covers', usd(s.depth_total), `${s.levels} ask levels`],
+    ['Depth +5% / +10%', `${usd(depthWithin(0.05))} / ${usd(depthWithin(0.10))}`, 'resting asks', 'sm'],
   ].map(([t, v, f, cls = '']) =>
     `<div class="card"><div class="t">${t}</div>
      <div class="v num ${cls}">${v}</div>${f ? `<div class="foot">${f}</div>` : ''}</div>`
@@ -103,16 +105,16 @@ function defendTable(defend) {
   const rows = RATES.map((rate) => {
     const c = avgCostVsMid(rate);
     return `<tr>
-      <td class="k num">${rate}%</td>
+      <td><span class="pill p-${rateTier(rate)} num">${rate}%</span></td>
       <td class="n num">${days(deployDays(defend, rate))}</td>
       <td class="n num">${usd((SNAP.vol24 * rate) / 100)}</td>
-      <td class="n"><span class="pill p-${costTier(c)} num">${pct(c, 2)}</span></td>
+      <td class="n num">${pct(c, 2)}</td>
     </tr>`;
   }).join('');
   return `<div class="lab">${usd(defend)} at a percentage of volume</div>
     <div class="scroll"><table>
       <thead><tr><th>Rate</th><th class="n">Deploys in</th>
-        <th class="n">Buying / day</th><th class="n">Avg cost vs mid</th></tr></thead>
+        <th class="n">Buying / day</th><th class="n">Avg fill vs mid</th></tr></thead>
       <tbody>${rows}</tbody></table></div>`;
 }
 
@@ -141,7 +143,10 @@ function renderReference() {
           to <b>${px(r.end)}</b> and filling at an average of <b>${px(r.avg)}</b> for
           ${tok(r.dydx)} DYDX. The displacement is transient: the quoted price reverts as
           market-makers replenish the book, so the level reached is a function of resting liquidity at
-          the moment of execution rather than a sustained price. The order would represent
+          the moment of execution rather than a sustained price. Only
+          <b>${usd(depthWithin(0.10))}</b> rests within 10% of the best ask, so most of this order
+          fills against progressively thinner liquidity far above mid rather than against real
+          two-sided interest. The order would represent
           <b>${(BUDGET / SNAP.vol24 * 100).toFixed(0)}%</b> of the last 24h of traded volume.
           ${r.capped ? '<b>Note:</b> this size exceeds the stored curve, so the figure is a floor on the true impact.' : ''}
           </p></div>
@@ -303,6 +308,9 @@ function setStamp() {
 function renderAll() {
   setStamp();
   document.getElementById('methodVol').textContent = usd(SNAP.vol24);
+  const cn = document.getElementById('curveNote');
+  if (cn) cn.textContent = `${SNAP.levels} ask levels up to ` +
+    `$${SNAP.curve[SNAP.curve.length - 1][0].toFixed(4)}`;
   renderStats(); renderOptions(); renderReference(); renderChart();
   if (window.__simRender) window.__simRender();
 }
