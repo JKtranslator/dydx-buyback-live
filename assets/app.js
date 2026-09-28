@@ -156,7 +156,7 @@ function renderReference() {
 
 /* ---------------------------------------------------------------- impact chart */
 function renderChart() {
-  const w = 900, h = 240, pad = { l: 46, r: 12, t: 12, b: 26 };
+  const w = 900, h = 200, pad = { l: 46, r: 12, t: 12, b: 26 };
   const maxSpend = 1_000_000;
   const pts = [];
   for (let s = 10_000; s <= maxSpend; s += 10_000) pts.push([s, (walk(s).avg / SNAP.mid - 1) * 100]);
@@ -307,6 +307,8 @@ function setStamp() {
 
 function renderAll() {
   setStamp();
+  const fs = document.getElementById('footStamp');
+  if (fs) fs.textContent = `${SNAP.date} · ${SNAP.time_utc}`;
   document.getElementById('methodVol').textContent = usd(SNAP.vol24);
   const cn = document.getElementById('curveNote');
   if (cn) cn.textContent = `${SNAP.levels} ask levels up to ` +
@@ -349,6 +351,14 @@ async function load() {
   initSimulator();
   renderAll();
   initRefresh();
+  // Export PDF: the browser's print dialog, using the print stylesheet (A4, interactive parts hidden).
+  // The title becomes the suggested filename, so it carries the snapshot date and time.
+  document.getElementById('pdfBtn').addEventListener('click', () => {
+    const t = document.title;
+    document.title = `dYdX buyback execution options - ${SNAP.date} ${SNAP.time_utc.replace(':', '')}`;
+    window.print();
+    document.title = t;
+  });
   document.getElementById('app').hidden = false;
 }
 load();
